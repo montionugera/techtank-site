@@ -13,7 +13,7 @@ export function Subnav(props: Props) {
 
   return (
     <div className="mx-auto max-w-7xl px-6 lg:px-8">
-      <div className="flex items-center justify-start py-3">
+      <div className="flex items-center justify-center py-3 lg:justify-start">
         <div className="flex flex-wrap items-center justify-center gap-1">
           {props.items.map((item) => {
             const isActive = pathname === item.href;
