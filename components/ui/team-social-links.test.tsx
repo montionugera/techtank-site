@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
 import { GitHubIcon, LinkedInIcon } from "./icons";
 import { TeamCard } from "./team-card";
-import { TeamSocialLinks } from "./team-social-links";
+import { extractUsername, TeamSocialLinks } from "./team-social-links";
 import type { TeamMember } from "../../constants/team";
 
 const memberWithLinks: TeamMember = {
@@ -21,6 +21,22 @@ const memberWithoutLinks: TeamMember = {
   role: "Volunteer",
   avatar: "/images/team/jane-doe.webp",
 };
+
+describe("extractUsername", () => {
+  it("extracts LinkedIn usernames from various URL formats", () => {
+    expect(extractUsername("https://www.linkedin.com/in/tkodev", "linkedin")).toBe("tkodev");
+    expect(extractUsername("https://linkedin.com/in/tkodev/", "linkedin")).toBe("tkodev");
+    expect(extractUsername("https://www.linkedin.com/in/tony-ko?trk=profile", "linkedin")).toBe("tony-ko");
+    expect(extractUsername("linkedin.com/in/tonyko", "linkedin")).toBe("tonyko");
+  });
+
+  it("extracts GitHub usernames from various URL formats", () => {
+    expect(extractUsername("https://github.com/tkodev", "github")).toBe("tkodev");
+    expect(extractUsername("https://www.github.com/tkodev/", "github")).toBe("tkodev");
+    expect(extractUsername("https://github.com/tkodev?tab=repositories", "github")).toBe("tkodev");
+    expect(extractUsername("github.com/tkodev", "github")).toBe("tkodev");
+  });
+});
 
 describe("icons", () => {
   it("exports LinkedInIcon and GitHubIcon with proper SVG attributes", () => {
@@ -42,14 +58,19 @@ describe("TeamSocialLinks", () => {
     expect(html).toBe("");
   });
 
-  it("renders accessible LinkedIn and GitHub links when provided", () => {
+  it("renders accessible LinkedIn and GitHub ghost button links with labels and aria-hidden icons", () => {
     const html = renderToString(<TeamSocialLinks member={memberWithLinks} />);
 
-    // Accessible names with member name
-    expect(html).toContain('aria-label="Tony Ko on LinkedIn"');
-    expect(html).toContain('aria-label="Tony Ko on GitHub"');
-    expect(html).toContain('<span class="sr-only">Tony Ko on LinkedIn</span>');
-    expect(html).toContain('<span class="sr-only">Tony Ko on GitHub</span>');
+    // Visible labels next to icons
+    expect(html).toContain("linkedin: tkodev");
+    expect(html).toContain("github: tkodev");
+
+    // Accessible names with member name and handle
+    expect(html).toContain('aria-label="Tony Ko on LinkedIn: tkodev"');
+    expect(html).toContain('aria-label="Tony Ko on GitHub: tkodev"');
+
+    // Icons are decorative for screen readers
+    expect(html).toContain('aria-hidden="true"');
 
     // Security & target
     expect(html).toContain('target="_blank"');
@@ -59,9 +80,17 @@ describe("TeamSocialLinks", () => {
     expect(html).toContain('href="https://www.linkedin.com/in/tkodev"');
     expect(html).toContain('href="https://github.com/tkodev"');
 
-    // Focus ring styling
+    // Ghost button styling classes
+    expect(html).toContain("text-muted-foreground");
+    expect(html).toContain("hover:text-foreground");
     expect(html).toContain("focus-visible:ring-2");
     expect(html).toContain("focus-visible:ring-ring");
+  });
+
+  it("supports center alignment for dialogs", () => {
+    const html = renderToString(<TeamSocialLinks member={memberWithLinks} align="center" />);
+    expect(html).toContain("items-center");
+    expect(html).toContain("justify-center");
   });
 
   it("renders only LinkedIn when only linkedin is provided", () => {
@@ -74,8 +103,9 @@ describe("TeamSocialLinks", () => {
         }}
       />,
     );
-    expect(html).toContain('aria-label="Alice on LinkedIn"');
-    expect(html).not.toContain("GitHub");
+    expect(html).toContain('aria-label="Alice on LinkedIn: alice"');
+    expect(html).toContain("linkedin: alice");
+    expect(html).not.toContain("github");
   });
 
   it("renders only GitHub when only github is provided", () => {
@@ -88,29 +118,32 @@ describe("TeamSocialLinks", () => {
         }}
       />,
     );
-    expect(html).toContain('aria-label="Bob on GitHub"');
-    expect(html).not.toContain("LinkedIn");
+    expect(html).toContain('aria-label="Bob on GitHub: bob"');
+    expect(html).toContain("github: bob");
+    expect(html).not.toContain("linkedin");
   });
 });
 
 describe("TeamCard", () => {
-  it.each(["board", "core", "compact"] as const)(
-    "positions social icons in bottom-right without nested interactive elements for %s variant",
+  it.each(["board", "core"] as const)(
+    "renders social links between description and View profile hint for %s variant",
     (variant) => {
       const html = renderToString(<TeamCard variant={variant} member={memberWithLinks} />);
 
       // External profile links are rendered
       expect(html).toContain('href="https://www.linkedin.com/in/tkodev"');
       expect(html).toContain('href="https://github.com/tkodev"');
+      expect(html).toContain("linkedin: tkodev");
+      expect(html).toContain("github: tkodev");
 
-      // Correct bottom-right positioning class present
-      const expectedPosition =
-        variant === "board"
-          ? "absolute right-6 bottom-6"
-          : variant === "core"
-            ? "absolute right-4 bottom-4"
-            : "absolute right-3 bottom-2.5";
-      expect(html).toContain(expectedPosition);
+      // Verify ordering: description -> links -> View profile
+      const bioIndex = html.indexOf("Bio description here.");
+      const linkIndex = html.indexOf("linkedin: tkodev");
+      const hintIndex = html.indexOf("View profile");
+
+      expect(bioIndex).toBeGreaterThan(-1);
+      expect(linkIndex).toBeGreaterThan(bioIndex);
+      expect(hintIndex).toBeGreaterThan(linkIndex);
 
       // Verify no nested interactive elements: no <button> contains an <a> tag
       expect(html).not.toMatch(/<button[^>]*>[\s\S]*?<a[\s\S]*?<\/button>/);
@@ -119,10 +152,19 @@ describe("TeamCard", () => {
     },
   );
 
+  it("renders social links for compact variant without nested interactive elements", () => {
+    const html = renderToString(<TeamCard variant="compact" member={memberWithLinks} />);
+
+    expect(html).toContain('href="https://www.linkedin.com/in/tkodev"');
+    expect(html).toContain("linkedin: tkodev");
+    expect(html).not.toMatch(/<button[^>]*>[\s\S]*?<a[\s\S]*?<\/button>/);
+    expect(html).not.toMatch(/<a[^>]*>[\s\S]*?<button[\s\S]*?<\/a>/);
+  });
+
   it("does not render link icons when member has no links", () => {
     const html = renderToString(<TeamCard variant="compact" member={memberWithoutLinks} />);
-    expect(html).not.toContain("LinkedIn");
-    expect(html).not.toContain("GitHub");
+    expect(html).not.toContain("linkedin");
+    expect(html).not.toContain("github");
     expect(html).not.toContain("<a");
   });
 });

@@ -24,7 +24,7 @@ export function TeamProfileDialog({ member, open, onClose }: TeamProfileDialogPr
           </DialogTitle>
           <p className="mt-1 text-sm text-muted-foreground">{pronouns}</p>
           {role && <span className="tag mt-3 inline-block text-xs">{role}</span>}
-          <TeamSocialLinks member={member} size="md" className="mt-4 justify-center" />
+          <TeamSocialLinks member={member} align="center" className="mt-3" />
         </div>
       </div>
 

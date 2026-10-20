@@ -32,18 +32,13 @@ const teamCardVariants = cva("group relative w-full text-left", {
 
 const avatarSizes = { board: "lg", core: "md", compact: "sm" } as const;
 
-const socialLinkPositions = {
-  board: "absolute right-6 bottom-6",
-  core: "absolute right-4 bottom-4",
-  compact: "absolute right-3 bottom-2.5",
-} as const;
-
 export interface TeamCardProps extends VariantProps<typeof teamCardVariants> {
   member: TeamMember;
   className?: string;
 }
 
-function BoardBody({ name, pronouns, role, bio, hasLinks }: TeamMember & { hasLinks?: boolean }) {
+function BoardBody({ member }: { member: TeamMember }) {
+  const { name, pronouns, role, bio } = member;
   return (
     <div>
       <p className="font-display text-2xl leading-tight font-bold text-foreground">{name}</p>
@@ -54,12 +49,14 @@ function BoardBody({ name, pronouns, role, bio, hasLinks }: TeamMember & { hasLi
       ) : (
         <p className="mt-4 line-clamp-2 text-sm text-muted-foreground italic">Bio coming soon</p>
       )}
-      <TeamProfileHint className={hasLinks ? "pr-18" : undefined} />
+      <TeamSocialLinks member={member} className="mt-4" />
+      <TeamProfileHint />
     </div>
   );
 }
 
-function CoreBody({ name, pronouns, role, bio, hasLinks }: TeamMember & { hasLinks?: boolean }) {
+function CoreBody({ member }: { member: TeamMember }) {
+  const { name, pronouns, role, bio } = member;
   return (
     <div className="min-w-0 flex-1">
       <p className="font-display text-lg leading-tight font-semibold text-foreground">{name}</p>
@@ -70,19 +67,22 @@ function CoreBody({ name, pronouns, role, bio, hasLinks }: TeamMember & { hasLin
       ) : (
         <p className="mt-4 line-clamp-2 text-sm text-muted-foreground italic">Bio coming soon</p>
       )}
-      <TeamProfileHint className={hasLinks ? "pr-18" : undefined} />
+      <TeamSocialLinks member={member} className="mt-4" />
+      <TeamProfileHint />
     </div>
   );
 }
 
-function CompactBody({ name, pronouns, role, hasLinks }: TeamMember & { hasLinks?: boolean }) {
+function CompactBody({ member }: { member: TeamMember }) {
+  const { name, pronouns, role } = member;
   return (
-    <div className={cn("min-w-0", hasLinks && "pr-18")}>
+    <div className="min-w-0 flex-1">
       <p className="truncate text-sm font-semibold text-foreground">{name}</p>
       <p className="truncate text-xs text-muted-foreground">
         {pronouns}
         {role ? ` · ${role}` : ""}
       </p>
+      <TeamSocialLinks member={member} className="mt-2" />
     </div>
   );
 }
@@ -93,7 +93,6 @@ export function TeamCard({ member, variant = "core", className }: TeamCardProps)
   const avatarSize = avatarSizes[variant ?? "core"];
   const isCompact = variant === "compact";
   const interactive = !isCompact || Boolean(bio);
-  const hasLinks = Boolean(member.linkedin || member.github);
 
   return (
     <>
@@ -106,11 +105,11 @@ export function TeamCard({ member, variant = "core", className }: TeamCardProps)
         )}
         <TeamAvatar name={name} avatar={avatar} size={avatarSize} />
         {variant === "board" ? (
-          <BoardBody {...member} hasLinks={hasLinks} />
+          <BoardBody member={member} />
         ) : isCompact ? (
-          <CompactBody {...member} hasLinks={hasLinks} />
+          <CompactBody member={member} />
         ) : (
-          <CoreBody {...member} hasLinks={hasLinks} />
+          <CoreBody member={member} />
         )}
         {interactive && (
           <button
@@ -122,7 +121,6 @@ export function TeamCard({ member, variant = "core", className }: TeamCardProps)
             className="absolute inset-0 size-full cursor-pointer rounded-[inherit] focus-visible:outline-none"
           />
         )}
-        <TeamSocialLinks member={member} size="sm" className={cn(socialLinkPositions[variant ?? "core"])} />
       </div>
       {interactive && <TeamProfileDialog member={member} open={open} onClose={() => setOpen(false)} />}
     </>

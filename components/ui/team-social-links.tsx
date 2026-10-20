@@ -1,54 +1,91 @@
 import type { ComponentPropsWithoutRef } from "react";
+import { Button } from "@/components/ui/button";
 import { GitHubIcon, LinkedInIcon } from "@/components/ui/icons";
 import type { TeamMember } from "@/constants/team";
 import { cn } from "@/utils/theme";
 
 export interface TeamSocialLinksProps extends ComponentPropsWithoutRef<"div"> {
   member: TeamMember;
-  size?: "sm" | "md";
+  align?: "left" | "center";
 }
 
-export function TeamSocialLinks({ member, size = "sm", className, ...props }: TeamSocialLinksProps) {
+/**
+ * Extracts a handle or username from a profile URL.
+ * Supports full URLs (https://www.linkedin.com/in/username), with/without trailing slashes,
+ * query parameters, and URLs without protocols.
+ */
+export function extractUsername(url: string, service: "linkedin" | "github"): string {
+  try {
+    const href = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+    const parsed = new URL(href);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+
+    if (service === "linkedin") {
+      const inIdx = parts.indexOf("in");
+      if (inIdx !== -1 && parts[inIdx + 1]) {
+        return parts[inIdx + 1];
+      }
+      return parts[parts.length - 1] ?? "";
+    }
+
+    if (service === "github") {
+      return parts[0] ?? "";
+    }
+  } catch {
+    const trimmed = url.replace(/\/+$/, "");
+    return trimmed.split("/").pop() ?? "";
+  }
+  return "";
+}
+
+export function TeamSocialLinks({ member, align = "left", className, ...props }: TeamSocialLinksProps) {
   const { name, linkedin, github } = member;
 
   if (!linkedin && !github) {
     return null;
   }
 
-  const isMd = size === "md";
-  const linkClasses = cn(
-    "relative z-10 inline-flex items-center justify-center rounded-full text-muted-foreground transition-[color,background-color] duration-150 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
-    isMd ? "size-9 border border-border bg-card hover:bg-accent" : "size-7",
+  const linkedinUser = linkedin ? extractUsername(linkedin, "linkedin") : "";
+  const githubUser = github ? extractUsername(github, "github") : "";
+  const isCenter = align === "center";
+
+  const buttonClass = cn(
+    "h-auto gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground",
+    isCenter ? "justify-center px-2.5" : "-ml-2.5 justify-start px-2.5",
   );
-  const iconClasses = isMd ? "size-4.5" : "size-4";
 
   return (
-    <div className={cn("flex items-center gap-1", className)} {...props}>
+    <div
+      className={cn("relative z-10 flex flex-col gap-1", isCenter ? "items-center" : "items-start", className)}
+      {...props}
+    >
       {linkedin && (
-        <a
-          href={linkedin}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${name} on LinkedIn`}
-          onClick={(e) => e.stopPropagation()}
-          className={linkClasses}
-        >
-          <LinkedInIcon className={iconClasses} aria-hidden="true" />
-          <span className="sr-only">{`${name} on LinkedIn`}</span>
-        </a>
+        <Button variant="ghost" size="sm" asChild className={buttonClass}>
+          <a
+            href={linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${name} on LinkedIn: ${linkedinUser}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <LinkedInIcon className="size-4 shrink-0" aria-hidden="true" />
+            <span>{`linkedin: ${linkedinUser}`}</span>
+          </a>
+        </Button>
       )}
       {github && (
-        <a
-          href={github}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${name} on GitHub`}
-          onClick={(e) => e.stopPropagation()}
-          className={linkClasses}
-        >
-          <GitHubIcon className={iconClasses} aria-hidden="true" />
-          <span className="sr-only">{`${name} on GitHub`}</span>
-        </a>
+        <Button variant="ghost" size="sm" asChild className={buttonClass}>
+          <a
+            href={github}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${name} on GitHub: ${githubUser}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GitHubIcon className="size-4 shrink-0" aria-hidden="true" />
+            <span>{`github: ${githubUser}`}</span>
+          </a>
+        </Button>
       )}
     </div>
   );
