@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { Dialog, DialogTitle } from "@/components/ui/dialog";
 import { TeamAvatar } from "@/components/ui/team-avatar";
+import { TeamSocialLinks } from "@/components/ui/team-social-links";
 import type { TeamMember } from "@/constants/team";
 
 interface TeamProfileDialogProps {
@@ -23,6 +24,7 @@ export function TeamProfileDialog({ member, open, onClose }: TeamProfileDialogPr
           </DialogTitle>
           <p className="mt-1 text-sm text-muted-foreground">{pronouns}</p>
           {role && <span className="tag mt-3 inline-block text-xs">{role}</span>}
+          <TeamSocialLinks member={member} size="md" className="mt-4 justify-center" />
         </div>
       </div>
 
