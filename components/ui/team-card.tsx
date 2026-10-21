@@ -76,14 +76,16 @@ function CoreBody({ member }: { member: TeamMember }) {
 function CompactBody({ member }: { member: TeamMember }) {
   const { name, pronouns, role } = member;
   return (
-    <div className="min-w-0 flex-1">
-      <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-      <p className="truncate text-xs text-muted-foreground">
-        {pronouns}
-        {role ? ` · ${role}` : ""}
-      </p>
-      <TeamSocialLinks member={member} className="mt-2" />
-    </div>
+    <>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {pronouns}
+          {role ? ` · ${role}` : ""}
+        </p>
+      </div>
+      <TeamSocialLinks member={member} iconOnly className="shrink-0" />
+    </>
   );
 }
 

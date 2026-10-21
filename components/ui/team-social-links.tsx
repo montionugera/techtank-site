@@ -7,6 +7,7 @@ import { cn } from "@/utils/theme";
 export interface TeamSocialLinksProps extends ComponentPropsWithoutRef<"div"> {
   member: TeamMember;
   align?: "left" | "center";
+  iconOnly?: boolean;
 }
 
 /**
@@ -38,7 +39,13 @@ export function extractUsername(url: string, service: "linkedin" | "github"): st
   return "";
 }
 
-export function TeamSocialLinks({ member, align = "left", className, ...props }: TeamSocialLinksProps) {
+export function TeamSocialLinks({
+  member,
+  align = "left",
+  iconOnly = false,
+  className,
+  ...props
+}: TeamSocialLinksProps) {
   const { name, linkedin, github } = member;
 
   if (!linkedin && !github) {
@@ -49,14 +56,20 @@ export function TeamSocialLinks({ member, align = "left", className, ...props }:
   const githubUser = github ? extractUsername(github, "github") : "";
   const isCenter = align === "center";
 
-  const buttonClass = cn(
-    "h-auto gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground",
-    isCenter ? "justify-center px-2.5" : "-ml-2.5 justify-start px-2.5",
-  );
+  const buttonClass = iconOnly
+    ? "size-8 p-0 text-muted-foreground hover:text-foreground"
+    : cn(
+        "h-auto gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground",
+        isCenter ? "justify-center px-2.5" : "-ml-2.5 justify-start px-2.5",
+      );
 
   return (
     <div
-      className={cn("relative z-10 flex flex-col gap-1", isCenter ? "items-center" : "items-start", className)}
+      className={cn(
+        "relative z-10 flex",
+        iconOnly ? "items-center gap-1" : cn("flex-col gap-1", isCenter ? "items-center" : "items-start"),
+        className,
+      )}
       {...props}
     >
       {linkedin && (
@@ -65,11 +78,17 @@ export function TeamSocialLinks({ member, align = "left", className, ...props }:
             href={linkedin}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${name} on LinkedIn: ${linkedinUser}`}
             onClick={(e) => e.stopPropagation()}
           >
             <LinkedInIcon className="size-4 shrink-0" aria-hidden="true" />
-            <span>{`linkedin: ${linkedinUser}`}</span>
+            {iconOnly ? (
+              <span className="sr-only">{`${name} on LinkedIn: ${linkedinUser}`}</span>
+            ) : (
+              <>
+                <span className="sr-only">{`${name} on `}</span>
+                <span>{`linkedin: ${linkedinUser}`}</span>
+              </>
+            )}
           </a>
         </Button>
       )}
@@ -79,11 +98,17 @@ export function TeamSocialLinks({ member, align = "left", className, ...props }:
             href={github}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`${name} on GitHub: ${githubUser}`}
             onClick={(e) => e.stopPropagation()}
           >
             <GitHubIcon className="size-4 shrink-0" aria-hidden="true" />
-            <span>{`github: ${githubUser}`}</span>
+            {iconOnly ? (
+              <span className="sr-only">{`${name} on GitHub: ${githubUser}`}</span>
+            ) : (
+              <>
+                <span className="sr-only">{`${name} on `}</span>
+                <span>{`github: ${githubUser}`}</span>
+              </>
+            )}
           </a>
         </Button>
       )}

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
-import { GitHubIcon, LinkedInIcon } from "./icons";
 import { TeamCard } from "./team-card";
 import { extractUsername, TeamSocialLinks } from "./team-social-links";
 import type { TeamMember } from "../../constants/team";
@@ -38,20 +37,6 @@ describe("extractUsername", () => {
   });
 });
 
-describe("icons", () => {
-  it("exports LinkedInIcon and GitHubIcon with proper SVG attributes", () => {
-    const linkedinHtml = renderToString(<LinkedInIcon className="size-4" />);
-    expect(linkedinHtml).toContain("<svg");
-    expect(linkedinHtml).toContain('aria-hidden="true"');
-    expect(linkedinHtml).toContain('fill="currentColor"');
-
-    const githubHtml = renderToString(<GitHubIcon className="size-4" />);
-    expect(githubHtml).toContain("<svg");
-    expect(githubHtml).toContain('aria-hidden="true"');
-    expect(githubHtml).toContain('fill="currentColor"');
-  });
-});
-
 describe("TeamSocialLinks", () => {
   it("renders null when member has no links", () => {
     const html = renderToString(<TeamSocialLinks member={memberWithoutLinks} />);
@@ -61,13 +46,10 @@ describe("TeamSocialLinks", () => {
   it("renders accessible LinkedIn and GitHub ghost button links with labels and aria-hidden icons", () => {
     const html = renderToString(<TeamSocialLinks member={memberWithLinks} />);
 
-    // Visible labels next to icons
+    // Visible labels next to icons + sr-only member context
     expect(html).toContain("linkedin: tkodev");
     expect(html).toContain("github: tkodev");
-
-    // Accessible names with member name and handle
-    expect(html).toContain('aria-label="Tony Ko on LinkedIn: tkodev"');
-    expect(html).toContain('aria-label="Tony Ko on GitHub: tkodev"');
+    expect(html).toContain('<span class="sr-only">Tony Ko on </span>');
 
     // Icons are decorative for screen readers
     expect(html).toContain('aria-hidden="true"');
@@ -87,6 +69,15 @@ describe("TeamSocialLinks", () => {
     expect(html).toContain("focus-visible:ring-ring");
   });
 
+  it("renders icon-only links with sr-only accessible names when iconOnly is true", () => {
+    const html = renderToString(<TeamSocialLinks member={memberWithLinks} iconOnly />);
+
+    expect(html).toContain('<span class="sr-only">Tony Ko on LinkedIn: tkodev</span>');
+    expect(html).toContain('<span class="sr-only">Tony Ko on GitHub: tkodev</span>');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain("aria-label=");
+  });
+
   it("supports center alignment for dialogs", () => {
     const html = renderToString(<TeamSocialLinks member={memberWithLinks} align="center" />);
     expect(html).toContain("items-center");
@@ -103,7 +94,7 @@ describe("TeamSocialLinks", () => {
         }}
       />,
     );
-    expect(html).toContain('aria-label="Alice on LinkedIn: alice"');
+    expect(html).toContain('<span class="sr-only">Alice on </span>');
     expect(html).toContain("linkedin: alice");
     expect(html).not.toContain("github");
   });
@@ -118,7 +109,7 @@ describe("TeamSocialLinks", () => {
         }}
       />,
     );
-    expect(html).toContain('aria-label="Bob on GitHub: bob"');
+    expect(html).toContain('<span class="sr-only">Bob on </span>');
     expect(html).toContain("github: bob");
     expect(html).not.toContain("linkedin");
   });
@@ -152,11 +143,13 @@ describe("TeamCard", () => {
     },
   );
 
-  it("renders social links for compact variant without nested interactive elements", () => {
+  it("renders icon-only social links with sr-only labels for compact variant without nested interactive elements", () => {
     const html = renderToString(<TeamCard variant="compact" member={memberWithLinks} />);
 
     expect(html).toContain('href="https://www.linkedin.com/in/tkodev"');
-    expect(html).toContain("linkedin: tkodev");
+    expect(html).toContain('<span class="sr-only">Tony Ko on LinkedIn: tkodev</span>');
+    expect(html).toContain('<span class="sr-only">Tony Ko on GitHub: tkodev</span>');
+    expect(html).not.toContain("aria-label=\"Tony Ko on LinkedIn");
     expect(html).not.toMatch(/<button[^>]*>[\s\S]*?<a[\s\S]*?<\/button>/);
     expect(html).not.toMatch(/<a[^>]*>[\s\S]*?<button[\s\S]*?<\/a>/);
   });
