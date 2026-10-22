@@ -149,7 +149,7 @@ describe("TeamCard", () => {
     expect(html).toContain('href="https://www.linkedin.com/in/tkodev"');
     expect(html).toContain('<span class="sr-only">Tony Ko on LinkedIn: tkodev</span>');
     expect(html).toContain('<span class="sr-only">Tony Ko on GitHub: tkodev</span>');
-    expect(html).not.toContain("aria-label=\"Tony Ko on LinkedIn");
+    expect(html).not.toContain('aria-label="Tony Ko on LinkedIn');
     expect(html).not.toMatch(/<button[^>]*>[\s\S]*?<a[\s\S]*?<\/button>/);
     expect(html).not.toMatch(/<a[^>]*>[\s\S]*?<button[\s\S]*?<\/a>/);
   });

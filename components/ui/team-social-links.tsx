@@ -74,12 +74,7 @@ export function TeamSocialLinks({
     >
       {linkedin && (
         <Button variant="ghost" size="sm" asChild className={buttonClass}>
-          <a
-            href={linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <a href={linkedin} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
             <LinkedInIcon className="size-4 shrink-0" aria-hidden="true" />
             {iconOnly ? (
               <span className="sr-only">{`${name} on LinkedIn: ${linkedinUser}`}</span>
@@ -94,12 +89,7 @@ export function TeamSocialLinks({
       )}
       {github && (
         <Button variant="ghost" size="sm" asChild className={buttonClass}>
-          <a
-            href={github}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <a href={github} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
             <GitHubIcon className="size-4 shrink-0" aria-hidden="true" />
             {iconOnly ? (
               <span className="sr-only">{`${name} on GitHub: ${githubUser}`}</span>
