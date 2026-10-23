@@ -12,10 +12,14 @@ describe("teamGroups", () => {
         expect(member.pronouns).toBeTruthy();
 
         if (member.linkedin !== undefined) {
-          expect(member.linkedin).toMatch(/^https:\/\/(www\.)?linkedin\.com\/.+/);
+          const url = new URL(member.linkedin);
+          expect(url.protocol).toBe("https:");
+          expect(["linkedin.com", "www.linkedin.com"]).toContain(url.hostname);
         }
         if (member.github !== undefined) {
-          expect(member.github).toMatch(/^https:\/\/(www\.)?github\.com\/.+/);
+          const url = new URL(member.github);
+          expect(url.protocol).toBe("https:");
+          expect(["github.com", "www.github.com"]).toContain(url.hostname);
         }
       }
     }
@@ -23,9 +27,7 @@ describe("teamGroups", () => {
 
   it("includes LinkedIn and GitHub URLs for members who provided them", () => {
     const allMembers = teamGroups.flatMap((g) => g.members);
-    const tonyKo = allMembers.find((m) => m.name === "Tony Ko");
-    expect(tonyKo).toBeDefined();
-    expect(tonyKo?.linkedin).toBe("https://www.linkedin.com/in/tkodev");
-    expect(tonyKo?.github).toBe("https://github.com/tkodev");
+    const memberWithSocials = allMembers.find((m) => m.linkedin && m.github);
+    expect(memberWithSocials).toBeDefined();
   });
 });

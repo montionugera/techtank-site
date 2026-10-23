@@ -37,8 +37,7 @@ export interface TeamCardProps extends VariantProps<typeof teamCardVariants> {
   className?: string;
 }
 
-function BoardBody({ member }: { member: TeamMember }) {
-  const { name, pronouns, role, bio } = member;
+function BoardBody({ name, pronouns, role, bio, linkedin, github }: TeamMember) {
   return (
     <div>
       <p className="font-display text-2xl leading-tight font-bold text-foreground">{name}</p>
@@ -49,14 +48,13 @@ function BoardBody({ member }: { member: TeamMember }) {
       ) : (
         <p className="mt-4 line-clamp-2 text-sm text-muted-foreground italic">Bio coming soon</p>
       )}
-      <TeamSocialLinks member={member} className="mt-4" />
+      <TeamSocialLinks linkedin={linkedin} github={github} className="mt-4" />
       <TeamProfileHint />
     </div>
   );
 }
 
-function CoreBody({ member }: { member: TeamMember }) {
-  const { name, pronouns, role, bio } = member;
+function CoreBody({ name, pronouns, role, bio, linkedin, github }: TeamMember) {
   return (
     <div className="min-w-0 flex-1">
       <p className="font-display text-lg leading-tight font-semibold text-foreground">{name}</p>
@@ -67,24 +65,23 @@ function CoreBody({ member }: { member: TeamMember }) {
       ) : (
         <p className="mt-4 line-clamp-2 text-sm text-muted-foreground italic">Bio coming soon</p>
       )}
-      <TeamSocialLinks member={member} className="mt-4" />
+      <TeamSocialLinks linkedin={linkedin} github={github} className="mt-4" />
       <TeamProfileHint />
     </div>
   );
 }
 
-function CompactBody({ member }: { member: TeamMember }) {
-  const { name, pronouns, role } = member;
+function CompactBody({ name, pronouns, role, linkedin, github }: TeamMember) {
   return (
     <>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-        <p className="truncate text-xs text-muted-foreground">
+        <p className="text-sm font-semibold text-foreground">{name}</p>
+        <p className="text-xs text-muted-foreground">
           {pronouns}
           {role ? ` · ${role}` : ""}
         </p>
       </div>
-      <TeamSocialLinks member={member} iconOnly className="shrink-0" />
+      <TeamSocialLinks linkedin={linkedin} github={github} iconOnly className="shrink-0" />
     </>
   );
 }
@@ -107,21 +104,21 @@ export function TeamCard({ member, variant = "core", className }: TeamCardProps)
         )}
         <TeamAvatar name={name} avatar={avatar} size={avatarSize} />
         {variant === "board" ? (
-          <BoardBody member={member} />
+          <BoardBody {...member} />
         ) : isCompact ? (
-          <CompactBody member={member} />
+          <CompactBody {...member} />
         ) : (
-          <CoreBody member={member} />
+          <CoreBody {...member} />
         )}
         {interactive && (
           <button
             type="button"
             data-card-action
-            aria-haspopup="dialog"
-            aria-label={`View ${name}'s profile`}
             onClick={() => setOpen(true)}
             className="absolute inset-0 size-full cursor-pointer rounded-[inherit] focus-visible:outline-none"
-          />
+          >
+            <span className="sr-only">{`View ${name}'s profile`}</span>
+          </button>
         )}
       </div>
       {interactive && <TeamProfileDialog member={member} open={open} onClose={() => setOpen(false)} />}

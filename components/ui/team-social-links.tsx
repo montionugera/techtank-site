@@ -1,89 +1,139 @@
 import type { ComponentPropsWithoutRef } from "react";
 import { Button } from "@/components/ui/button";
 import { GitHubIcon, LinkedInIcon } from "@/components/ui/icons";
-import type { TeamMember } from "@/constants/team";
-import { cn } from "@/utils/theme";
+import { cn, cva } from "@/utils/theme";
+
+const styles = {
+  root: cva("relative z-10 flex gap-1", {
+    variants: {
+      align: {
+        left: "items-start",
+        center: "items-center",
+      },
+      iconOnly: {
+        true: "flex-row items-center",
+        false: "flex-col",
+      },
+    },
+    defaultVariants: {
+      align: "left",
+      iconOnly: false,
+    },
+  }),
+  button: cva("text-muted-foreground hover:text-foreground", {
+    variants: {
+      align: {
+        left: "-ml-2.5 justify-start px-2.5",
+        center: "justify-center px-2.5",
+      },
+      iconOnly: {
+        true: "ml-0 size-8 justify-center p-0",
+        false: "h-auto gap-2 py-1 text-sm font-normal",
+      },
+    },
+    defaultVariants: {
+      align: "left",
+      iconOnly: false,
+    },
+  }),
+};
 
 export interface TeamSocialLinksProps extends ComponentPropsWithoutRef<"div"> {
-  member: TeamMember;
+  linkedin?: string;
+  github?: string;
   align?: "left" | "center";
   iconOnly?: boolean;
 }
 
 /**
- * Extracts a handle or username from a profile URL.
- * Supports full URLs (https://www.linkedin.com/in/username), with/without trailing slashes,
- * query parameters, and URLs without protocols.
+ * Normalizes and validates a profile URL string using `URL.canParse` and `URL.protocol`.
+ * Prepends `https://` when the input omits a scheme (e.g. "github.com/tkodev") and
+ * rejects non-HTTP(S) schemes.
  */
-export function extractUsername(url: string, service: "linkedin" | "github"): string {
-  try {
-    const href = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
-    const parsed = new URL(href);
-    const parts = parsed.pathname.split("/").filter(Boolean);
-
-    if (service === "linkedin") {
-      const inIdx = parts.indexOf("in");
-      if (inIdx !== -1 && parts[inIdx + 1]) {
-        return parts[inIdx + 1];
-      }
-      return parts[parts.length - 1] ?? "";
-    }
-
-    if (service === "github") {
-      return parts[0] ?? "";
-    }
-  } catch {
-    const trimmed = url.replace(/\/+$/, "");
-    return trimmed.split("/").pop() ?? "";
+function parseProfileUrl(rawUrl?: string): URL | null {
+  const trimmed = rawUrl?.trim();
+  if (!trimmed) {
+    return null;
   }
-  return "";
+
+  // Parse as-is if already a valid URL; otherwise retry with an explicit https:// scheme
+  // so bare host/path values like "linkedin.com/in/tkodev" still resolve cleanly.
+  const candidate = URL.canParse(trimmed) ? trimmed : `https://${trimmed}`;
+  if (!URL.canParse(candidate)) {
+    return null;
+  }
+
+  const parsed = new URL(candidate);
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+
+  return parsed;
+}
+
+/**
+ * Extracts a LinkedIn handle from a profile URL.
+ * Personal LinkedIn profiles use `/in/<handle>`; if the URL follows another
+ * path structure, the last non-empty path segment is used as a fallback.
+ */
+export function extractLinkedInUsername(url?: string): string {
+  const parsed = parseProfileUrl(url);
+  if (!parsed) {
+    return "";
+  }
+
+  // Split pathname into non-empty segments so leading and trailing slashes are ignored.
+  const parts = parsed.pathname.split("/").filter(Boolean);
+
+  // Personal LinkedIn URLs place the member handle immediately after the "in" segment.
+  const inIdx = parts.indexOf("in");
+  if (inIdx !== -1) {
+    return parts[inIdx + 1] ?? "";
+  }
+
+  // Fall back to the final path segment for non-standard profile URLs.
+  return parts.at(-1) ?? "";
+}
+
+/**
+ * Extracts a GitHub username from a profile URL.
+ * GitHub profile URLs place the account handle in the first path segment (`/<username>`).
+ */
+export function extractGitHubUsername(url?: string): string {
+  const parsed = parseProfileUrl(url);
+  if (!parsed) {
+    return "";
+  }
+
+  // Split pathname into non-empty segments; the first segment is the GitHub username.
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  return parts[0] ?? "";
 }
 
 export function TeamSocialLinks({
-  member,
+  linkedin,
+  github,
   align = "left",
   iconOnly = false,
   className,
   ...props
 }: TeamSocialLinksProps) {
-  const { name, linkedin, github } = member;
-
   if (!linkedin && !github) {
     return null;
   }
 
-  const linkedinUser = linkedin ? extractUsername(linkedin, "linkedin") : "";
-  const githubUser = github ? extractUsername(github, "github") : "";
-  const isCenter = align === "center";
-
-  const buttonClass = iconOnly
-    ? "size-8 p-0 text-muted-foreground hover:text-foreground"
-    : cn(
-        "h-auto gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground",
-        isCenter ? "justify-center px-2.5" : "-ml-2.5 justify-start px-2.5",
-      );
+  const linkedinUser = extractLinkedInUsername(linkedin);
+  const githubUser = extractGitHubUsername(github);
+  const buttonClass = styles.button({ align, iconOnly });
 
   return (
-    <div
-      className={cn(
-        "relative z-10 flex",
-        iconOnly ? "items-center gap-1" : cn("flex-col gap-1", isCenter ? "items-center" : "items-start"),
-        className,
-      )}
-      {...props}
-    >
+    <div className={cn(styles.root({ align, iconOnly }), className)} {...props}>
       {linkedin && (
         <Button variant="ghost" size="sm" asChild className={buttonClass}>
           <a href={linkedin} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
             <LinkedInIcon className="size-4 shrink-0" aria-hidden="true" />
-            {iconOnly ? (
-              <span className="sr-only">{`${name} on LinkedIn: ${linkedinUser}`}</span>
-            ) : (
-              <>
-                <span className="sr-only">{`${name} on `}</span>
-                <span>{`linkedin: ${linkedinUser}`}</span>
-              </>
-            )}
+            <span className={iconOnly ? "sr-only" : undefined}>{linkedinUser}</span>
+            <span className="sr-only">on LinkedIn</span>
           </a>
         </Button>
       )}
@@ -91,14 +141,8 @@ export function TeamSocialLinks({
         <Button variant="ghost" size="sm" asChild className={buttonClass}>
           <a href={github} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
             <GitHubIcon className="size-4 shrink-0" aria-hidden="true" />
-            {iconOnly ? (
-              <span className="sr-only">{`${name} on GitHub: ${githubUser}`}</span>
-            ) : (
-              <>
-                <span className="sr-only">{`${name} on `}</span>
-                <span>{`github: ${githubUser}`}</span>
-              </>
-            )}
+            <span className={iconOnly ? "sr-only" : undefined}>{githubUser}</span>
+            <span className="sr-only">on GitHub</span>
           </a>
         </Button>
       )}

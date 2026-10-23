@@ -12,7 +12,7 @@ interface TeamProfileDialogProps {
 }
 
 export function TeamProfileDialog({ member, open, onClose }: TeamProfileDialogProps) {
-  const { name, pronouns, role, bio, avatar } = member;
+  const { name, pronouns, role, bio, avatar, linkedin, github } = member;
 
   return (
     <Dialog open={open} onClose={onClose}>
@@ -24,7 +24,7 @@ export function TeamProfileDialog({ member, open, onClose }: TeamProfileDialogPr
           </DialogTitle>
           <p className="mt-1 text-sm text-muted-foreground">{pronouns}</p>
           {role && <span className="tag mt-3 inline-block text-xs">{role}</span>}
-          <TeamSocialLinks member={member} align="center" className="mt-3" />
+          <TeamSocialLinks linkedin={linkedin} github={github} align="center" className="mt-3" />
         </div>
       </div>
 
